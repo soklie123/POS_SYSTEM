@@ -1,47 +1,51 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
+use App\Http\Requests\LoginRequest;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
+use App\Services\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
+//receives request → calls service
+// receives valid request
 class AuthController extends Controller
 {
-    public function login(Request $request)
+    //inject service
+    public function __construct(
+        private AuthService $authService
+    )
+    {}
+   public function login(LoginRequest $request)
     {
-        $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required',
-        ]);
+        try{
+            $result=$this->authService->login(
+                $request->only('email','password')
+            );
+           return response()->json([
+                'token'=>$result['token'],
+                'user'=>new UserResource($result['user']),
+            ]);
+        
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
+
+        }catch(\Exception $e){
             return response()->json([
-                'message' => 'Invalid email or password'
-            ], 401);
+                'message'=>$e->getMessage()
+            ],401);
         }
-
-        $user  = Auth::user();
-        $token = $user->createToken('cashier-token')->plainTextToken;
-
-        return response()->json([
-            'token' => $token,
-            'user'  => [
-                'id'    => $user->id,
-                'name'  => $user->name,
-                'email' => $user->email,
-            ]
-        ]);
     }
-
+    // Logout
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $this->authService->logout($request);
         return response()->json(['message' => 'Logged out']);
     }
 
+    // Get current user
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        return new UserResource($request->user());
     }
 }

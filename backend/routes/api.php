@@ -12,7 +12,7 @@ use App\Http\Controllers\Cashier\OrderController as CashierOrderController;
 use App\Http\Controllers\Cashier\PaymentController;
 
 // ── Public ────────────────────────────────────────────────────
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login',  [AuthController::class,  'login']);
 
 // ── Authenticated ─────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
@@ -35,7 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // ── Cashier routes ────────────────────────────────────────
-    Route::middleware('role:admin,cashier')->prefix('cashier')->name('cashier.')->group(function () {
+    Route::middleware('role:admin|cashier')->prefix('cashier')->name('cashier.')->group(function () {
 
         Route::get('products', [CashierProductController::class, 'index']);
 
