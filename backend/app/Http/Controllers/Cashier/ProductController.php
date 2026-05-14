@@ -3,26 +3,43 @@
 namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ProductController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Product::with('category')->where('is_active', true);
+        $request->validate([
+            'search'   => ['nullable', 'string', 'max:100'],
+            'category' => ['nullable', 'string', 'max:50'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
 
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->category_id);
-        }
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('barcode', $request->search);
-            });
+        $products = Product::query()
+            ->with('category')
+            ->active()
+            ->search($request->input('search'))
+            ->inCategory($request->input('category'))
+            ->orderBy('name')
+            ->paginate($request->integer('per_page', 20));
+
+        return ProductResource::collection($products);
+    }
+
+    public function show(int $id): ProductResource|JsonResponse
+    {
+        $product = Product::with('category')->active()->find($id);
+
+        if (!$product) {
+            return response()->json([
+                'message' => 'Product not found.',
+            ], 404);
         }
 
-        // Returns all products (no pagination) so mobile can cache locally
-        return response()->json($query->orderBy('name')->get());
+        return new ProductResource($product);
     }
 }

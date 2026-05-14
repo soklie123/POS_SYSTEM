@@ -3,26 +3,54 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Category extends Model
 {
-    //
-    use HasFactory;
+    use SoftDeletes;
 
-    protected $fillable = ['name', 'slug', 'is_active'];
+    protected $table = 'categories';
 
-    protected $casts = ['is_active' => 'boolean'];
+    /**
+     * Mass assignable fields
+     */
+    protected $fillable = [
+        'name',
+        'slug',
+        'color',
+        'is_active',
+    ];
 
-    public function products(){
-        return $this->hasMany(Product::class);
-    }
+    /**
+     * Attribute casting
+     */
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 
-    protected static function boot () {
+    /**
+     * Auto-generate slug
+     */
+    protected static function boot()
+    {
         parent::boot();
+
         static::creating(function ($category) {
             $category->slug = Str::slug($category->name);
         });
+
+        static::updating(function ($category) {
+            $category->slug = Str::slug($category->name);
+        });
+    }
+
+    /**
+     * Products relationship
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
     }
 }

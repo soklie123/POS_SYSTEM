@@ -37,34 +37,23 @@ class _SplashScreenState extends State<SplashScreen>
     _logoScale = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(parent: _logoController, curve: Curves.elasticOut),
     );
-    _logoFade = CurvedAnimation(
-      parent: _logoController,
-      curve: Curves.easeIn,
-    );
+    _logoFade = CurvedAnimation(parent: _logoController, curve: Curves.easeIn);
 
     _textController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _textFade = CurvedAnimation(
-      parent: _textController,
-      curve: Curves.easeIn,
-    );
+    _textFade = CurvedAnimation(parent: _textController, curve: Curves.easeIn);
     _textSlide = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _textController, curve: Curves.easeOut),
-    );
+    ).animate(CurvedAnimation(parent: _textController, curve: Curves.easeOut));
 
     _dotsController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _dotsFade = CurvedAnimation(
-      parent: _dotsController,
-      curve: Curves.easeIn,
-    );
+    _dotsFade = CurvedAnimation(parent: _dotsController, curve: Curves.easeIn);
   }
 
   void _startSequence() async {
@@ -162,8 +151,9 @@ class _SplashScreenState extends State<SplashScreen>
                         borderRadius: BorderRadius.circular(22),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFF5821E)
-                                .withValues(alpha: 0.5),
+                            color: const Color(
+                              0xFFF5821E,
+                            ).withValues(alpha: 0.5),
                             blurRadius: 30,
                             spreadRadius: 4,
                           ),
@@ -238,11 +228,7 @@ class _SplashScreenState extends State<SplashScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1a1a2e),
-            Color(0xFF16213e),
-            Color(0xFF0f3460),
-          ],
+          colors: [Color(0xFF1a1a2e), Color(0xFF16213e), Color(0xFF0f3460)],
         ),
       ),
     );

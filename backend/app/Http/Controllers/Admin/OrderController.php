@@ -4,77 +4,58 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Services\OrderService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    public function __construct(private OrderService $orderService){}
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
-        $query = Order::with('user:id,name', 'customer:id,name', 'payment');
+        $orders = Order::with(['user', 'items.product'])  // Load items too
+            ->latest()
+            ->paginate(15);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->filled('from')){
-            $query->whereDate('created_at', '>=', $request->from);
-        }
-
-         if ($request->filled('to')) {
-            $query->whereDate('created_at', '<=', $request->to);
-        }
-        if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
-        }
-
-        return response()->json($query->latest()->paginate(20));
-
+        return response()->json([
+            'data' => $orders->map(fn($order) => [
+                'id'             => $order->id,
+                'order_number'   => $order->order_number,
+                'cashier'        => $order->user?->name ?? 'Unknown',
+                'date'           => $order->created_at->format('Y-m-d H:i:s'), // Better format for Flutter
+                'grand_total'    => $order->grand_total,
+                'payment_method' => $order->payment_method,
+                'status'         => $order->status,
+                'items_count'    => $order->items->count(),
+            ]),
+            'meta' => [
+                'total'        => $orders->total(),
+                'current_page' => $orders->currentPage(),
+                'last_page'    => $orders->lastPage(),
+            ],
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function show(int $id): JsonResponse
     {
-        //
-    }
+        $order = Order::with(['user', 'items.product'])->findOrFail($id);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Order $order)
-    {
-        return response()->json($order->load('items.product', 'customer', 'user:id,name', 'payment'));
-    }
-
-    public function cancel(Order $order)
-    {
-        try {
-            $order = $this->orderService->cancel($order);
-            return response()->json($order);
-        } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
-        }
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json([
+            'data' => [
+                'id'             => $order->id,
+                'order_number'   => $order->order_number,
+                'cashier'        => $order->user?->name ?? 'Unknown',
+                'date'           => $order->created_at->format('Y-m-d H:i:s'),
+                'grand_total'    => $order->grand_total,
+                'discount'       => $order->discount ?? 0,
+                'payment_method' => $order->payment_method,
+                'status'         => $order->status,
+                'items'          => $order->items->map(fn($item) => [
+                    'name'     => $item->product_name,
+                    'price'    => $item->product_price,
+                    'quantity' => $item->quantity,
+                    'subtotal' => $item->subtotal,
+                    'image'    => $item->product?->image_url ?? null,   // Important for image
+                ]),
+            ],
+        ]);
     }
 }

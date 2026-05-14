@@ -3,55 +3,80 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Category;
-use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
+    // GET ALL
     public function index()
     {
-        return response()->json(Category::withCount('products')->latest()->get());
+        $categories = Category::withCount('products')->get();
+
+        return response()->json([
+            'data' => $categories
+        ]);
     }
 
+    // STORE
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'name'      => 'required|string|max:100|unique:categories',
-            'is_active' => 'boolean',
+        $validated = $request->validate([
+            'name'  => 'required|string|max:255',
+            'color' => 'nullable|string|max:20',
         ]);
 
-        $data['slug'] = Str::slug($data['name']);
-        return response()->json(Category::create($data), 201);
-    }
-
-    public function show(Category $category)
-    {
-        return response()->json($category->load('products'));
-    }
-
-    public function update(Request $request, Category $category)
-    {
-        $data = $request->validate([
-            'name'      => 'sometimes|string|max:100|unique:categories,name,' . $category->id,
-            'is_active' => 'boolean',
+        $category = Category::create([
+            'name'  => $validated['name'],
+            'color' => $validated['color'] ?? '#FF6B00',
         ]);
 
-        if (isset($data['name'])) {
-            $data['slug'] = Str::slug($data['name']);
-        }
-
-        $category->update($data);
-        return response()->json($category);
+        return response()->json([
+            'message' => 'Category created successfully',
+            'data' => $category
+        ], 201);
     }
 
-    public function destroy(Category $category)
+    // SHOW
+    public function show($id)
     {
-        if ($category->products()->exists()) {
-            return response()->json(['message' => 'Cannot delete category with products.'], 422);
-        }
+        $category = Category::withCount('products')->findOrFail($id);
+
+        return response()->json([
+            'data' => $category
+        ]);
+    }
+
+    // UPDATE
+    public function update(Request $request, $id)
+    {
+        $category = Category::findOrFail($id);
+
+        $validated = $request->validate([
+            'name'  => 'required|string|max:255',
+            'color' => 'nullable|string|max:20',
+        ]);
+
+        $category->update([
+            'name'  => $validated['name'],
+            'color' => $validated['color'] ?? '#FF6B00',
+        ]);
+
+        return response()->json([
+            'message' => 'Category updated successfully',
+            'data' => $category
+        ]);
+    }
+
+    // DELETE
+    public function destroy($id)
+    {
+        $category = Category::findOrFail($id);
 
         $category->delete();
-        return response()->json(['message' => 'Category deleted.']);
+
+        return response()->json([
+            'message' => 'Category deleted successfully'
+        ]);
     }
 }
